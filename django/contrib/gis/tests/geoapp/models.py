@@ -58,6 +58,15 @@ class Truth(models.Model):
         app_label = 'geoapp'
 
 
+class User(NamedModel):
+    pass
+
+
+class UserLocation(NamedModel):
+    user = models.OneToOneField(User)
+    point = models.PointField()
+
+
 if not spatialite:
 
     class Feature(NamedModel):

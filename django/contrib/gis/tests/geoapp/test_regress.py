@@ -12,7 +12,7 @@ from django.db.models import Count, Min
 from django.test import TestCase
 
 if HAS_GEOS:
-    from .models import City, PennsylvaniaCity, State, Truth
+    from .models import City, PennsylvaniaCity, State, Truth, User, UserLocation
 
 
 @skipUnless(HAS_GEOS and HAS_SPATIAL_DB, "Geos and spatial db are required.")
@@ -86,3 +86,17 @@ class GeoRegressionTests(TestCase):
         # verify values
         self.assertEqual(val1, True)
         self.assertEqual(val2, False)
+
+    def test_distance_on_lookup_with_reversed_o2o_relation(self):
+        "Testing distance with a reversed one to one relation lookup on a geographic field."
+        user = User.objects.create(name='test_user')
+        UserLocation.objects.create(name='Mansfield',
+                                    point='POINT(-77.071445 41.823881)',
+                                    user=user)
+        pnt = City.objects.get(name='Pueblo').point
+
+        # compute distance on User queryset by using related UserLocation.point field
+        users_with_distance = User.objects.all().distance(pnt,
+                                                          field_name='userlocation__point')
+        self.assertEqual(len(users_with_distance), 1)
+        self.assertTrue(hasattr(users_with_distance[0], 'distance'))

@@ -74,15 +74,21 @@ class GeoWhereNode(WhereNode):
         fld_name = field_list.pop()
 
         try:
-            geo_fld = opts.get_field(fld_name)
+            geo_fld = opts.get_field_by_name(fld_name)[0]
+
             # If the field list is still around, then it means that the
             # lookup was for a geometry field across a relationship --
             # thus we keep on getting the related model options and the
             # model field associated with the next field in the list
             # until there's no more left.
             while len(field_list):
-                opts = geo_fld.rel.to._meta
-                geo_fld = opts.get_field(field_list.pop())
+                is_reverse_o2o = (not hasattr(geo_fld, 'rel') and geo_fld.field.unique)
+                if is_reverse_o2o:
+                    model = geo_fld.model
+                else:
+                    model = geo_fld.rel.to
+                opts = model._meta
+                geo_fld = model._meta.get_field_by_name(field_list.pop())[0]
         except (FieldDoesNotExist, AttributeError):
             return False
 
